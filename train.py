@@ -147,7 +147,7 @@ def main(args, task, logger):
 
     num_workers = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])
     train_loader = torch.utils.data.DataLoader(train_dataset,
-                                               batch_size=8,
+                                               batch_size=batch_size,
                                                num_workers=num_workers,
                                                shuffle=True,
                                                pin_memory=True)
@@ -241,14 +241,14 @@ def main(args, task, logger):
 def parse_args():
     import argparse
     parser = argparse.ArgumentParser(description="pytorch SA-UNET training")
-    parser.add_argument("--exp-name", required=True)
-    parser.add_argument("--data-path", default="./DRIVE/aug_training")
-    parser.add_argument("--fine-tune-path", default="./DRIVE/aug_training")
-    parser.add_argument("--test-path", default="./DRIVE/test")
+    parser.add_argument("--exp_name", required=True)
+    parser.add_argument("--data_path", default="./DRIVE/aug_training")
+    parser.add_argument("--fine_tune_path", default="./DRIVE/aug_training")
+    parser.add_argument("--test_path", default="./DRIVE/test")
     # exclude background
-    parser.add_argument("--num-classes", default=1, type=int)
+    parser.add_argument("--num_classes", default=1, type=int)
     parser.add_argument("--device", default="cuda", help="training device")
-    parser.add_argument("-b", "--batch-size", default=8, type=int)
+    parser.add_argument("-b", "--batch_size", default=8, type=int)
     parser.add_argument("--epochs", default=150, type=int, metavar="N",
                         help="number of total epochs to train")
 
@@ -257,7 +257,7 @@ def parse_args():
     # parser.add_argument('--resume', default=r'./results/24082022_235033_no_GAN/best_model.pth',
     parser.add_argument('--resume', default='',
                         help='resume from checkpoint')
-    parser.add_argument('--start-epoch', default=1, type=int, metavar='N',
+    parser.add_argument('--start_epoch', default=1, type=int, metavar='N',
                         help='start epoch')
     parser.add_argument('--early_stop', default=35, type=int)
 
