@@ -1,4 +1,7 @@
-CHASEDB1/
-.idea/
-__pycache__/
+CHASEDB1/*
+.idea/*
+__pycache__/*
 *.ini
+*.pyc
+test_results/
+*.xml

@@ -53,7 +53,13 @@ if __name__ == '__main__':
     checkpoint = torch.load(args.model_path, map_location='cpu')
     model.load_state_dict(checkpoint['model'])
 
-    img_names = [i for i in os.listdir(args.input_dir) if i.endswith(".png")]
+    img_names = []
+
+    for f in [".png", ".gif", ".tif"]:
+        img_names_ = [i for i in os.listdir(args.input_dir) if i.endswith(f)]
+        for im in img_names_:
+            img_names.append(im)
+
     img_list = [os.path.join(args.input_dir, i) for i in img_names]
 
     print(f'{len(img_list)} images found. starting inference')
@@ -61,5 +67,5 @@ if __name__ == '__main__':
         im_path = os.path.join(args.input_dir, im_name)
         res = inference(model, im_path_to_infer=im_path, test_transform=get_transform(train=False, mean=mean, std=std))
         file_name = os.path.splitext(im_path)[0]
-        save_image(res, os.path.join(args.output_dir, im_name[:-4] + '.png'))
+        save_image(res, os.path.join(args.output_dir, im_name[:-4] + '.tif'))
 

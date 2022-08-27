@@ -88,7 +88,7 @@ def train(args, model, optimizer, train_loader, device, scheduler, scaler, losss
         aucs.append(AUC_ROC)
 
         logger.report_scalar(title='loss', series='series', value=mean_loss, iteration=epoch)
-        logger.report_scalar(title='acccuracy', series='series', value=accs, iteration=epoch)
+        logger.report_scalar(title='acccuracy', series='series', value=acc, iteration=epoch)
         logger.report_scalar(title='F1 Score', series='series', value=F1, iteration=epoch)
         logger.report_scalar(title='AUC ROC', series='series', value=AUC_ROC, iteration=epoch)
         logger.report_scalar(title='precision', series='series', value=pr, iteration=epoch)
