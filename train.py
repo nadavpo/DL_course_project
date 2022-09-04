@@ -82,10 +82,12 @@ def train(args, model, optimizer, train_loader, device, scheduler, scaler, losss
         if scheduler:
             scheduler.step()
         lr = optimizer.param_groups[0]["lr"]
+        print(f"learning rate - {lr}\n")
 
         acc, se, sp, F1, pr, AUC_ROC = evaluate(model, val_loader, device=device, num_classes=num_classes)
 
-        print(f"train_loss: {mean_loss}, Precision: {pr}, Accuracy: {acc}, F1-score: {F1}, AUC_ROC: {AUC_ROC}")
+        print(f"train_loss: {mean_loss}, Precision: {pr}")
+        print(f"F1-score: {F1}, Accuracy: {acc}, AUC_ROC: {AUC_ROC}")
         print(f"Sensitivity: {se}, Specificity: {sp}")
 
         losss.append(mean_loss)
@@ -188,7 +190,8 @@ def main(args, task=None, logger=None):
     scaler = torch.cuda.amp.GradScaler() if args.amp else None
 
     # scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs, warmup=True)
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 0.65 ** epoch)
+    # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 0.65 ** epoch)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.7)
     # more options https://www.kaggle.com/code/isbhargav/guide-to-pytorch-learning-rate-scheduling/notebook
     # scheduler = None
 
@@ -275,12 +278,12 @@ def main(args, task=None, logger=None):
             pickle.dump(best_metric, f)
 
     with open(os.path.join(res_dir, 'best metrics.txt'), 'w') as f:
-        f.write(f"F1 - {np.max(f1s)}")
-        f.write(f"AUC_ROC - {np.max(aucs)}")
-        f.write(f"Precision - {np.max(prs)}")
-        f.write(f"Accuracy - {np.max(accs)}")
-        f.write(f"Sensitivity - {np.max(ses)}")
-        f.write(f"Specificity - {np.max(sps)}")
+        f.write(f"F1 - {np.max(f1s)}\n")
+        f.write(f"AUC_ROC - {np.max(aucs)}\n")
+        f.write(f"Precision - {np.max(prs)}\n")
+        f.write(f"Accuracy - {np.max(accs)}\n")
+        f.write(f"Sensitivity - {np.max(ses)}\n")
+        f.write(f"Specificity - {np.max(sps)}\n")
     if task:
         task.upload_artifact('best model', artifact_object=os.path.join(res_dir, "best_model.pth"))
     print('finished')
@@ -312,7 +315,7 @@ def parse_args():
     parser.add_argument("--epochs", default=150, type=int, metavar="N")
     parser.add_argument("--fine_tune_epochs", default=0, type=int, metavar="N")
 
-    parser.add_argument('--lr', default=0.000001, type=float, help='initial learning rate')
+    parser.add_argument('--lr', default=0.001, type=float, help='initial learning rate')
 
     # parser.add_argument('--resume', default=r'./results/24082022_235033_no_GAN/best_model.pth',
     parser.add_argument('--resume', default='',
