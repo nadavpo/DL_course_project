@@ -305,15 +305,15 @@ def parse_args():
     import argparse
     parser = argparse.ArgumentParser(description="pytorch SA-UNET training")
     parser.add_argument("--exp_name", default='only_oring_LR')
-    parser.add_argument("--data_path", default="./DRIVE/training_aug")
+    parser.add_argument("--data_path", default="./DRIVE/orig_10_gan_aug")
     parser.add_argument("--fine_tune_path", default="./DRIVE/training_aug")
     parser.add_argument("--test_path", default="./DRIVE/test")
     # exclude background
     parser.add_argument("--num_classes", default=1, type=int)
     parser.add_argument("--device", default="cuda", help="training device")
     parser.add_argument("-b", "--batch_size", default=2, type=int)
-    parser.add_argument("--epochs", default=150, type=int, metavar="N")
-    parser.add_argument("--fine_tune_epochs", default=0, type=int, metavar="N")
+    parser.add_argument("--epochs", default=100, type=int, metavar="N")
+    parser.add_argument("--fine_tune_epochs", default=20, type=int, metavar="N")
 
     parser.add_argument('--lr', default=0.001, type=float, help='initial learning rate')
 
