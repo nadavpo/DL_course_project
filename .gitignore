@@ -6,3 +6,6 @@ __pycache__/*
 test_results/
 *.xml
 /.idea/workspace.xml
+/DRIVE
+/results
+/test_results

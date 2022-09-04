@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import torch
 import torch.utils.data
 
@@ -11,7 +12,13 @@ from train_utils.train_and_eval import train_one_epoch, evaluate, create_lr_sche
 import pickle
 import time
 import pathlib
-from clearml import Task, Logger
+import matplotlib
+
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+
+# from clearml import Task, Logger
 
 
 class SegmentationPresetTrain:
@@ -66,18 +73,20 @@ def create_model(num_classes):
 
 
 def train(args, model, optimizer, train_loader, device, scheduler, scaler, losss, aucs, prs, f1s, sps, ses, accs,
-          val_loader, num_classes, best_metric, res_dir, n_epochs, mean, std, trigger, start_epoch, logger):
-    for epoch in range(start_epoch, start_epoch + n_epochs + 1):
-        mean_loss = train_one_epoch(model, optimizer, train_loader, device, epoch, scheduler,
+          val_loader, num_classes, best_metric, res_dir, n_epochs, mean, std, trigger, start_epoch, logger, lrs):
+    for epoch in range(start_epoch, start_epoch + n_epochs):
+        mean_loss = train_one_epoch(model, optimizer, train_loader, device, epoch, start_epoch + n_epochs - 1,
+                                    scheduler,
                                     scaler=scaler)
         # drive
-        # scheduler.step()
+        if scheduler:
+            scheduler.step()
         lr = optimizer.param_groups[0]["lr"]
 
         acc, se, sp, F1, pr, AUC_ROC = evaluate(model, val_loader, device=device, num_classes=num_classes)
 
-        print(f"train_loss: {mean_loss}, Precision: {pr}, acc: {acc}, F1-score: {F1}, AUC_ROC: {AUC_ROC}")
-        print(f"se: {se}, sp: {sp}")
+        print(f"train_loss: {mean_loss}, Precision: {pr}, Accuracy: {acc}, F1-score: {F1}, AUC_ROC: {AUC_ROC}")
+        print(f"Sensitivity: {se}, Specificity: {sp}")
 
         losss.append(mean_loss)
         accs.append(acc)
@@ -86,18 +95,21 @@ def train(args, model, optimizer, train_loader, device, scheduler, scaler, losss
         f1s.append(F1)
         prs.append(pr)
         aucs.append(AUC_ROC)
+        lrs.append(lr)
 
-        logger.report_scalar(title='loss', series='series', value=mean_loss, iteration=epoch)
-        logger.report_scalar(title='acccuracy', series='series', value=acc, iteration=epoch)
-        logger.report_scalar(title='F1 Score', series='series', value=F1, iteration=epoch)
-        logger.report_scalar(title='AUC ROC', series='series', value=AUC_ROC, iteration=epoch)
-        logger.report_scalar(title='precision', series='series', value=pr, iteration=epoch)
-        logger.report_scalar(title='sp', series='series', value=sp, iteration=epoch)
-        logger.report_scalar(title='se', series='series', value=se, iteration=epoch)
+        if logger:
+            logger.report_scalar(title='loss', series='series', value=mean_loss, iteration=epoch)
+            logger.report_scalar(title='Accuracy', series='Accuracy', value=acc, iteration=epoch)
+            logger.report_scalar(title='F1 Score', series='F1 Score', value=F1, iteration=epoch)
+            logger.report_scalar(title='AUC ROC', series='AUC ROC', value=AUC_ROC, iteration=epoch)
+            logger.report_scalar(title='Precision', series='Precision', value=pr, iteration=epoch)
+            logger.report_scalar(title='Specificity', series='Specificity', value=sp, iteration=epoch)
+            logger.report_scalar(title='Sensitivity', series='Sensitivity', value=se, iteration=epoch)
+            logger.report_scalar(title='lr', series='lr', value=lr, iteration=epoch)
 
         save_file = {"model": model.state_dict(),
                      "optimizer": optimizer.state_dict(),
-                     "lr_scheduler": scheduler.state_dict(),
+                     "lr_scheduler": scheduler.state_dict() if scheduler else None,
                      "epoch": epoch,
                      "args": args,
                      "mean_im": mean,
@@ -109,13 +121,19 @@ def train(args, model, optimizer, train_loader, device, scheduler, scaler, losss
 
         if AUC_ROC > best_metric["AUC_ROC"]:
             best_metric["AUC_ROC"] = AUC_ROC
+            best_metric["loss"] = mean_loss
+            best_metric["Accuracy"] = acc
+            best_metric["Sensitivity"] = se
+            best_metric["Specificity"] = sp
+            best_metric["F1"] = F1
+            best_metric["Precision"] = pr
             torch.save(save_file, os.path.join(res_dir, "best_model.pth"))
             trigger = 0
             print('saving model')
-    return model, best_metric, losss, aucs, prs, f1s, sps, ses, accs
+    return model, best_metric, losss, aucs, prs, f1s, sps, ses, accs, lrs
 
 
-def main(args, task, logger):
+def main(args, task=None, logger=None):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     batch_size = args.batch_size
     # segmentation nun_classes + background
@@ -169,7 +187,10 @@ def main(args, task, logger):
 
     scaler = torch.cuda.amp.GradScaler() if args.amp else None
 
-    scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs, warmup=True)
+    # scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs, warmup=True)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 0.65 ** epoch)
+    # more options https://www.kaggle.com/code/isbhargav/guide-to-pytorch-learning-rate-scheduling/notebook
+    # scheduler = None
 
     if args.resume:
         print('resuming from file')
@@ -190,16 +211,34 @@ def main(args, task, logger):
     sps = []
     ses = []
     accs = []
+    lrs = []
 
     res_dir = os.path.join('results', time.strftime("%d%m%Y_%H%M%S_") + args.exp_name)
     pathlib.Path(res_dir).mkdir(parents=True, exist_ok=True)
 
-    model, best_metric, losss, aucs, prs, f1s, sps, ses, accs = train(args, model, optimizer, train_loader, device,
+    model, best_metric, losss, aucs, prs, f1s, sps, ses, accs, lrs = train(args, model, optimizer, train_loader, device,
                                                                       scheduler, scaler, losss, aucs, prs, f1s, sps,
                                                                       ses, accs, val_loader, num_classes, best_metric,
                                                                       res_dir, args.epochs, mean, std, trigger,
-                                                                      args.start_epoch, logger)
-    if args.fine_tune_path:
+                                                                      args.start_epoch, logger, lrs)
+    save_articat(losss, 'losss', 'loss', res_dir)
+    save_articat(accs, 'Accuracies', 'Accuracy', res_dir)
+    save_articat(ses, 'Sensitivities', 'Sensitivity', res_dir)
+    save_articat(sps, 'Specificities', 'Specificity', res_dir)
+    save_articat(f1s, 'F1 Scores', 'F1 score', res_dir)
+    save_articat(prs, 'Precision', 'Precision', res_dir)
+    save_articat(aucs, 'AUC_ROC', 'AUC_ROC', res_dir)
+    save_articat(lrs, 'LR', 'LR', res_dir)
+
+    print(f"best result:")
+    for k, v in best_metric.items():
+        print(f"{k}: {v}")
+
+    with open(os.path.join(res_dir, 'best result - metrics.pkl'), 'wb') as f:
+        pickle.dump(best_metric, f)
+
+    if args.fine_tune_path and args.fine_tune_epochs > 0:
+        print("start fine tune")
         mean, std = compute_mean_std.compute(img_dir=os.path.join(args.fine_tune_path, 'images'))
         # logger.report_single_value('fine_tune_main', mean)
         # logger.report_single_value('fine_tune_main', std)
@@ -208,51 +247,72 @@ def main(args, task, logger):
                                      train=True,
                                      transforms=get_transform(train=True, mean=mean, std=std))
         train_loader = torch.utils.data.DataLoader(train_dataset,
-                                                   batch_size=8,
+                                                   batch_size=batch_size,
                                                    num_workers=num_workers,
                                                    shuffle=True,
                                                    pin_memory=True)
-        model, best_metric, losss, aucs, prs, f1s, sps, ses, accs = train(args, model, optimizer, train_loader, device,
-                                                                          scheduler, scaler, losss, aucs, prs, f1s, sps,
+        model, best_metric, losss, aucs, prs, f1s, sps, ses, accs, lrs = train(args, model, optimizer, train_loader, device,
+                                                                          None, scaler, losss, aucs, prs, f1s, sps,
                                                                           ses, accs, val_loader, num_classes,
                                                                           best_metric,
-                                                                          res_dir, args.start_epoch, mean, std, trigger,
-                                                                          30, logger)
+                                                                          res_dir, args.epochs + args.fine_tune_epochs,
+                                                                          mean, std, trigger,
+                                                                          args.epochs + 1, logger, lrs)
+        save_articat(losss, 'losss - fine tune', 'loss', res_dir)
+        save_articat(accs, 'Accuracies - fine tune', 'Accuracy', res_dir)
+        save_articat(ses, 'Sensitivities - fine tune', 'Sensitivity', res_dir)
+        save_articat(sps, 'Specificities - fine tune', 'Specificity', res_dir)
+        save_articat(f1s, 'F1 Scores - fine tune', 'F1 score', res_dir)
+        save_articat(prs, 'Precision - fine tune', 'Precision', res_dir)
+        save_articat(aucs, 'AUC_ROC - fine tune', 'AUC_ROC', res_dir)
+        save_articat(lrs, 'LR - fine tune', 'LR', res_dir)
 
-    with open(os.path.join(res_dir, 'losss.pkl'), 'wb') as f:
-        pickle.dump(losss, f)
-    with open(os.path.join(res_dir, 'accs.pkl'), 'wb') as f:
-        pickle.dump(accs, f)
-    with open(os.path.join(res_dir, 'ses.pkl'), 'wb') as f:
-        pickle.dump(ses, f)
-    with open(os.path.join(res_dir, 'sps.pkl'), 'wb') as f:
-        pickle.dump(sps, f)
-    with open(os.path.join(res_dir, 'f1s.pkl'), 'wb') as f:
-        pickle.dump(f1s, f)
-    with open(os.path.join(res_dir, 'prs.pkl'), 'wb') as f:
-        pickle.dump(prs, f)
-    with open(os.path.join(res_dir, 'aucs.pkl'), 'wb') as f:
-        pickle.dump(aucs, f)
+        print(f"best result after fine tune:")
+        for k, v in best_metric.items():
+            print(f"{k}: {v}")
 
-    task.upload_artifact('best model', artifact_object=os.path.join(res_dir, "best_model.pth"))
+        with open(os.path.join(res_dir, 'best result - metrics - after fine tune.pkl'), 'wb') as f:
+            pickle.dump(best_metric, f)
+
+    with open(os.path.join(res_dir, 'best metrics.txt'), 'w') as f:
+        f.write(f"F1 - {np.max(f1s)}")
+        f.write(f"AUC_ROC - {np.max(aucs)}")
+        f.write(f"Precision - {np.max(prs)}")
+        f.write(f"Accuracy - {np.max(accs)}")
+        f.write(f"Sensitivity - {np.max(ses)}")
+        f.write(f"Specificity - {np.max(sps)}")
+    if task:
+        task.upload_artifact('best model', artifact_object=os.path.join(res_dir, "best_model.pth"))
     print('finished')
+
+
+def save_articat(data, name, y_label, res_dir):
+    plt.figure()
+    plt.plot(range(len(data)), data)
+    plt.title(name)
+    plt.xlabel('epoch #')
+    plt.ylabel(y_label)
+    plt.savefig(os.path.join(res_dir, name + '.png'))
+
+    with open(os.path.join(res_dir, name + '.pkl'), 'wb') as f:
+        pickle.dump(data, f)
 
 
 def parse_args():
     import argparse
     parser = argparse.ArgumentParser(description="pytorch SA-UNET training")
-    parser.add_argument("--exp_name", required=True)
-    parser.add_argument("--data_path", default="./DRIVE/aug_training")
-    parser.add_argument("--fine_tune_path", default="./DRIVE/aug_training")
+    parser.add_argument("--exp_name", default='only_oring_LR')
+    parser.add_argument("--data_path", default="./DRIVE/training_aug")
+    parser.add_argument("--fine_tune_path", default="./DRIVE/training_aug")
     parser.add_argument("--test_path", default="./DRIVE/test")
     # exclude background
     parser.add_argument("--num_classes", default=1, type=int)
     parser.add_argument("--device", default="cuda", help="training device")
-    parser.add_argument("-b", "--batch_size", default=8, type=int)
-    parser.add_argument("--epochs", default=150, type=int, metavar="N",
-                        help="number of total epochs to train")
+    parser.add_argument("-b", "--batch_size", default=2, type=int)
+    parser.add_argument("--epochs", default=150, type=int, metavar="N")
+    parser.add_argument("--fine_tune_epochs", default=0, type=int, metavar="N")
 
-    parser.add_argument('--lr', default=0.0001, type=float, help='initial learning rate')
+    parser.add_argument('--lr', default=0.000001, type=float, help='initial learning rate')
 
     # parser.add_argument('--resume', default=r'./results/24082022_235033_no_GAN/best_model.pth',
     parser.add_argument('--resume', default='',
@@ -272,7 +332,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    task = Task.init(project_name="SA_UNET", task_name=args.exp_name)
-
-    logger = Logger.current_logger()
-    main(args, task, logger)
+    # task = Task.init(project_name="SA_UNET", task_name=args.exp_name)
+    #
+    # logger = Logger.current_logger()
+    main(args)

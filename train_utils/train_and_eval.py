@@ -95,7 +95,7 @@ def evaluate(model, data_loader, device, num_classes):
         4], AUC_ROC
 
 
-def train_one_epoch(model, optimizer, data_loader, device, epoch, scheduler,
+def train_one_epoch(model, optimizer, data_loader, device, epoch, total_epochs, scheduler,
                     scaler=None):
     model.train()
     total_loss = 0
@@ -108,7 +108,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, scheduler,
             loss = criterion(output, target, False)
         total_loss += loss.item()
 
-        data_loader.set_description(f"Epoch[{epoch}/150]-train,train_loss:{loss.item()}")
+        data_loader.set_description(f"Epoch[{epoch}/{total_epochs}]-train,train_loss:{loss.item()}")
         optimizer.zero_grad()
         if scaler is not None:
             scaler.scale(loss).backward()
@@ -119,7 +119,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, scheduler,
             optimizer.step()
         
         # chasedb1
-        scheduler.step()
+        # scheduler.step()
     return total_loss / len(data_loader)
 
 

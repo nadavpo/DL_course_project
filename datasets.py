@@ -32,6 +32,9 @@ class DriveDataset(Dataset):
         img = Image.open(self.img_list[idx])
         # 值为0和255
         mask = Image.open(self.manual[idx]).convert('L')
+
+        img = img.resize((565, 584))
+        mask = mask.resize((565, 584))
         if self.transforms is not None:
             img, mask = self.transforms(img, mask)
 

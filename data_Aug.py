@@ -90,6 +90,9 @@ def threadOPS(img_path, new_img_path, label_path, new_label_path):
     img_names = os.listdir(img_path)
     label_names = os.listdir(label_path)
 
+    img_names = [im for im in img_names if not im.endswith('ini')]
+    label_names = [im for im in label_names if not im.endswith('ini')]
+
     img_num = len(img_names)
     label_num = len(label_names)
 
@@ -115,10 +118,10 @@ def threadOPS(img_path, new_img_path, label_path, new_label_path):
 # Please modify the path
 if __name__ == '__main__':
     # DRIVE
-    threadOPS(r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\gan_out\images",  # set your path of training images
-              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\gan_aug\images",
-              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\gan_out\1st_manual",  # set your path of training labels
-              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\gan_aug\1st_manual")
+    threadOPS(r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\orig_10_gan\images",  # set your path of training images
+              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\orig_10_gan_aug\images",
+              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\orig_10_gan\1st_manual",  # set your path of training labels
+              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\orig_10_gan_aug\1st_manual")
 
     # CHANSEDB1
     # os.makedirs("CHASEDB1/aug/images")
