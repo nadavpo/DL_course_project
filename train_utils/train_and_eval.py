@@ -108,7 +108,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, total_epochs, 
             loss = criterion(output, target, False)
         total_loss += loss.item()
 
-        data_loader.set_description(f"Epoch[{epoch}/{total_epochs}]-train,train_loss:{loss.item()}")
+        data_loader.set_description(f"Epoch {epoch}/{total_epochs}")
         optimizer.zero_grad()
         if scaler is not None:
             scaler.scale(loss).backward()

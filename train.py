@@ -17,8 +17,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-
-# from clearml import Task, Logger
+from clearml import Task, Logger
 
 
 class SegmentationPresetTrain:
@@ -73,9 +72,10 @@ def create_model(num_classes):
 
 
 def train(args, model, optimizer, train_loader, device, scheduler, scaler, losss, aucs, prs, f1s, sps, ses, accs,
-          val_loader, num_classes, best_metric, res_dir, n_epochs, mean, std, trigger, start_epoch, logger, lrs):
-    for epoch in range(start_epoch, start_epoch + n_epochs):
-        mean_loss = train_one_epoch(model, optimizer, train_loader, device, epoch, start_epoch + n_epochs - 1,
+          val_loader, num_classes, best_metric, res_dir, n_epochs, mean, std, trigger, start_epoch, logger, lrs,
+          metric_to_optim, is_fine_tune=False):
+    for epoch in range(start_epoch, n_epochs + 1):
+        mean_loss = train_one_epoch(model, optimizer, train_loader, device, epoch, n_epochs,
                                     scheduler,
                                     scaler=scaler)
         # drive
@@ -121,7 +121,10 @@ def train(args, model, optimizer, train_loader, device, scheduler, scaler, losss
 
         trigger += 1
 
-        if AUC_ROC > best_metric["AUC_ROC"]:
+        curr_res = {'AUC_ROC': AUC_ROC, "loss": mean_loss, "Accuracy": acc, "Sensitivity": se, "Specificity": sp,
+                    "F1": F1, "Precision": pr}
+
+        if curr_res[metric_to_optim] > best_metric[metric_to_optim]:
             best_metric["AUC_ROC"] = AUC_ROC
             best_metric["loss"] = mean_loss
             best_metric["Accuracy"] = acc
@@ -129,10 +132,58 @@ def train(args, model, optimizer, train_loader, device, scheduler, scaler, losss
             best_metric["Specificity"] = sp
             best_metric["F1"] = F1
             best_metric["Precision"] = pr
-            torch.save(save_file, os.path.join(res_dir, "best_model.pth"))
+            if is_fine_tune:
+                torch.save(save_file, os.path.join(res_dir, "best_model_fine_tune.pth"))
+            else:
+                torch.save(save_file, os.path.join(res_dir, "best_model.pth"))
             trigger = 0
             print('saving model')
     return model, best_metric, losss, aucs, prs, f1s, sps, ses, accs, lrs
+
+
+def reset_optimizer(params_to_optimize, train_loader, epochs):
+    optimizer = torch.optim.Adam(
+        params_to_optimize,
+        lr=args.lr
+    )
+
+    scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs, warmup=True)
+    # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 0.65 ** epoch)
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.7)
+    # more options https://www.kaggle.com/code/isbhargav/guide-to-pytorch-learning-rate-scheduling/notebook
+    # scheduler = None
+    return optimizer, scheduler
+
+
+def print_WP(f1s, aucs, accs, prs, sps, ses, ind, f):
+    print(f"Precision: {prs[ind]}, F1-score: {f1s[ind]}")
+    print(f"Accuracy: {accs[ind]}, AUC_ROC: {aucs[ind]}")
+    print(f"Sensitivity: {ses[ind]}, Specificity: {sps[ind]}")
+    f.write(f"Precision: {prs[ind]}\n")
+    f.write(f"F1-score: {f1s[ind]}\n")
+    f.write(f"Accuracy: {accs[ind]}\n")
+    f.write(f"AUC_ROC: {aucs[ind]}\n")
+    f.write(f"Sensitivity: {ses[ind]}\n")
+    f.write(f"Specificity: {sps[ind]}\n")
+    f.write(f"\n\n")
+
+
+def print_save_metrics(f1s, aucs, accs, prs, sps, ses, res_dir):
+    with open(os.path.join(res_dir, 'best metrics.txt'), 'w') as f:
+        print(f"best result F1:")
+        f.write(f"best result F1:\n")
+        ind = f1s.index(max(f1s))
+        print_WP(f1s, aucs, accs, prs, sps, ses, ind, f)
+
+        print(f"best result Accuracy:")
+        f.write(f"best result Accuracy:\n")
+        ind = accs.index(max(accs))
+        print_WP(f1s, aucs, accs, prs, sps, ses, ind, f)
+
+        print(f"best result AUC_ROC:")
+        f.write(f"best result AUC_ROC:\n")
+        ind = aucs.index(max(aucs))
+        print_WP(f1s, aucs, accs, prs, sps, ses, ind, f)
 
 
 def main(args, task=None, logger=None):
@@ -150,6 +201,7 @@ def main(args, task=None, logger=None):
     # DRIVE
     train_dataset = DriveDataset(args.data_path,
                                  train=True,
+                                 num_data_exp=args.num_data_exp,
                                  transforms=get_transform(train=True, mean=mean, std=std))
 
     val_dataset = DriveDataset(args.test_path,
@@ -182,18 +234,9 @@ def main(args, task=None, logger=None):
 
     params_to_optimize = [p for p in model.parameters() if p.requires_grad]
 
-    optimizer = torch.optim.Adam(
-        params_to_optimize,
-        lr=args.lr
-    )
-
     scaler = torch.cuda.amp.GradScaler() if args.amp else None
 
-    # scheduler = create_lr_scheduler(optimizer, len(train_loader), args.epochs, warmup=True)
-    # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda epoch: 0.65 ** epoch)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.7)
-    # more options https://www.kaggle.com/code/isbhargav/guide-to-pytorch-learning-rate-scheduling/notebook
-    # scheduler = None
+    optimizer, scheduler = reset_optimizer(params_to_optimize, train_loader, args.epochs)
 
     if args.resume:
         print('resuming from file')
@@ -220,10 +263,13 @@ def main(args, task=None, logger=None):
     pathlib.Path(res_dir).mkdir(parents=True, exist_ok=True)
 
     model, best_metric, losss, aucs, prs, f1s, sps, ses, accs, lrs = train(args, model, optimizer, train_loader, device,
-                                                                      scheduler, scaler, losss, aucs, prs, f1s, sps,
-                                                                      ses, accs, val_loader, num_classes, best_metric,
-                                                                      res_dir, args.epochs, mean, std, trigger,
-                                                                      args.start_epoch, logger, lrs)
+                                                                           scheduler, scaler, losss, aucs, prs, f1s,
+                                                                           sps,
+                                                                           ses, accs, val_loader, num_classes,
+                                                                           best_metric,
+                                                                           res_dir, args.epochs, mean, std, trigger,
+                                                                           args.start_epoch, logger, lrs,
+                                                                           args.metric_to_optim)
     save_articat(losss, 'losss', 'loss', res_dir)
     save_articat(accs, 'Accuracies', 'Accuracy', res_dir)
     save_articat(ses, 'Sensitivities', 'Sensitivity', res_dir)
@@ -233,34 +279,36 @@ def main(args, task=None, logger=None):
     save_articat(aucs, 'AUC_ROC', 'AUC_ROC', res_dir)
     save_articat(lrs, 'LR', 'LR', res_dir)
 
-    print(f"best result:")
-    for k, v in best_metric.items():
-        print(f"{k}: {v}")
-
-    with open(os.path.join(res_dir, 'best result - metrics.pkl'), 'wb') as f:
-        pickle.dump(best_metric, f)
+    print_save_metrics(f1s, aucs, accs, prs, sps, ses, res_dir)
 
     if args.fine_tune_path and args.fine_tune_epochs > 0:
         print("start fine tune")
         mean, std = compute_mean_std.compute(img_dir=os.path.join(args.fine_tune_path, 'images'))
+
+        optimizer, scheduler = reset_optimizer(params_to_optimize, train_loader, args.fine_tune_epochs)
+
         # logger.report_single_value('fine_tune_main', mean)
         # logger.report_single_value('fine_tune_main', std)
         # DRIVE
         train_dataset = DriveDataset(args.fine_tune_path,
                                      train=True,
+                                     num_data_exp=args.num_fine_tune_exp,
                                      transforms=get_transform(train=True, mean=mean, std=std))
         train_loader = torch.utils.data.DataLoader(train_dataset,
                                                    batch_size=batch_size,
                                                    num_workers=num_workers,
                                                    shuffle=True,
                                                    pin_memory=True)
-        model, best_metric, losss, aucs, prs, f1s, sps, ses, accs, lrs = train(args, model, optimizer, train_loader, device,
-                                                                          None, scaler, losss, aucs, prs, f1s, sps,
-                                                                          ses, accs, val_loader, num_classes,
-                                                                          best_metric,
-                                                                          res_dir, args.epochs + args.fine_tune_epochs,
-                                                                          mean, std, trigger,
-                                                                          args.epochs + 1, logger, lrs)
+        model, best_metric, losss, aucs, prs, f1s, sps, ses, accs, lrs = train(args, model, optimizer, train_loader,
+                                                                               device,
+                                                                               None, scaler, losss, aucs, prs, f1s, sps,
+                                                                               ses, accs, val_loader, num_classes,
+                                                                               best_metric,
+                                                                               res_dir,
+                                                                               args.epochs + args.fine_tune_epochs,
+                                                                               mean, std, trigger,
+                                                                               args.epochs + 1, logger, lrs,
+                                                                               args.metric_to_optim, is_fine_tune=True)
         save_articat(losss, 'losss - fine tune', 'loss', res_dir)
         save_articat(accs, 'Accuracies - fine tune', 'Accuracy', res_dir)
         save_articat(ses, 'Sensitivities - fine tune', 'Sensitivity', res_dir)
@@ -270,20 +318,8 @@ def main(args, task=None, logger=None):
         save_articat(aucs, 'AUC_ROC - fine tune', 'AUC_ROC', res_dir)
         save_articat(lrs, 'LR - fine tune', 'LR', res_dir)
 
-        print(f"best result after fine tune:")
-        for k, v in best_metric.items():
-            print(f"{k}: {v}")
+        print_save_metrics(f1s, aucs, accs, prs, sps, ses, res_dir)
 
-        with open(os.path.join(res_dir, 'best result - metrics - after fine tune.pkl'), 'wb') as f:
-            pickle.dump(best_metric, f)
-
-    with open(os.path.join(res_dir, 'best metrics.txt'), 'w') as f:
-        f.write(f"F1 - {np.max(f1s)}\n")
-        f.write(f"AUC_ROC - {np.max(aucs)}\n")
-        f.write(f"Precision - {np.max(prs)}\n")
-        f.write(f"Accuracy - {np.max(accs)}\n")
-        f.write(f"Sensitivity - {np.max(ses)}\n")
-        f.write(f"Specificity - {np.max(sps)}\n")
     if task:
         task.upload_artifact('best model', artifact_object=os.path.join(res_dir, "best_model.pth"))
     print('finished')
@@ -304,16 +340,19 @@ def save_articat(data, name, y_label, res_dir):
 def parse_args():
     import argparse
     parser = argparse.ArgumentParser(description="pytorch SA-UNET training")
-    parser.add_argument("--exp_name", default='only_oring_LR')
-    parser.add_argument("--data_path", default="./DRIVE/orig_10_gan_aug")
-    parser.add_argument("--fine_tune_path", default="./DRIVE/training_aug")
+    parser.add_argument("--exp_name", default='50 gan samples no augs, orig train no augs, AUC_ROC')
+    parser.add_argument("--num_data_exp", default=50, type=int)
+    parser.add_argument("--data_path", default="./DRIVE/gan_data_new")
+    parser.add_argument("--fine_tune_path", default="./DRIVE/training")
+    parser.add_argument("--num_fine_tune_exp", default=-1, type=int)
     parser.add_argument("--test_path", default="./DRIVE/test")
     # exclude background
     parser.add_argument("--num_classes", default=1, type=int)
     parser.add_argument("--device", default="cuda", help="training device")
     parser.add_argument("-b", "--batch_size", default=2, type=int)
     parser.add_argument("--epochs", default=100, type=int, metavar="N")
-    parser.add_argument("--fine_tune_epochs", default=20, type=int, metavar="N")
+    parser.add_argument("--fine_tune_epochs", default=50, type=int, metavar="N")
+    parser.add_argument("--metric_to_optim", default="AUC_ROC")  # AUC_ROC,Accuracy,F1,Precision,Sensitivity,Specificity
 
     parser.add_argument('--lr', default=0.001, type=float, help='initial learning rate')
 
@@ -335,7 +374,13 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    # task = Task.init(project_name="SA_UNET", task_name=args.exp_name)
-    #
-    # logger = Logger.current_logger()
-    main(args)
+
+    run_clearml = True
+    if run_clearml:
+        task = Task.init(project_name="SA_UNET", task_name=args.exp_name)
+        logger = Logger.current_logger()
+    else:
+        task = None
+        logger = None
+
+    main(args, task, logger)

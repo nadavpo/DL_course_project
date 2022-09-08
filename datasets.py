@@ -1,11 +1,12 @@
 import os
 
+import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset
 
 
 class DriveDataset(Dataset):
-    def __init__(self, root: str, train: bool, transforms=None):
+    def __init__(self, root: str, train: bool, num_data_exp=-1, transforms=None):
         super(DriveDataset, self).__init__()
         self.transforms = transforms
         ext_opt = ['.png', '.tif', '.gif']
@@ -15,12 +16,22 @@ class DriveDataset(Dataset):
             img_names_ = [i for i in os.listdir(os.path.join(root, "images")) if i.endswith(ext)]
             for im in img_names_:
                 img_names.append(im)
-        self.img_list = [os.path.join(root, "images", i) for i in img_names]
+        if num_data_exp < 0 or num_data_exp > len(img_names):
+            self.img_list = [os.path.join(root, "images", i) for i in img_names]
+        else:
+            inds = np.random.choice(len(img_names), num_data_exp, replace=False)
+            img_names_ = [img_names[i] for i in range(len(img_names)) if i in inds]
+            self.img_list = [os.path.join(root, "images", i) for i in img_names_]
+
         for ext in ext_opt:
             manual_names_ = [i for i in os.listdir(os.path.join(root, "1st_manual")) if i.endswith(ext)]
             for im in manual_names_:
                 manual_names.append(im)
-        self.manual = [os.path.join(root, "1st_manual", i) for i in manual_names]
+        if num_data_exp < 0 or num_data_exp > len(manual_names):
+            self.manual = [os.path.join(root, "1st_manual", i) for i in manual_names]
+        else:
+            manual_names_ = [manual_names[i] for i in range(len(manual_names)) if i in inds]
+            self.manual = [os.path.join(root, "1st_manual", i) for i in manual_names_]
         print(len(self.img_list))
         print(len(self.manual))
         # check files

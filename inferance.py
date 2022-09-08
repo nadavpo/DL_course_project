@@ -12,9 +12,9 @@ from torchvision.utils import save_image
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Training models with Pytorch')
-    parser.add_argument('--input_dir', default='./DRIVE/gan_out/images', type=str)
-    parser.add_argument('--output_dir', default='./DRIVE/gan_out_png/1st_manual', type=str)
-    parser.add_argument('--model_path', default='./results/24082022_235033_no_GAN/best_model.pth', type=str)
+    parser.add_argument('--input_dir', default='./DRIVE/test/images', type=str)
+    parser.add_argument('--output_dir', default='./test_results/DRIVE_RESULTS/temp', type=str)
+    parser.add_argument('--model_path', default='./results/08092022_132925_50 gan samples no augs, orig train no augs, AUC_ROC/best_model.pth', type=str)
 
     return parser.parse_args()
 
@@ -67,5 +67,5 @@ if __name__ == '__main__':
         im_path = os.path.join(args.input_dir, im_name)
         res = inference(model, im_path_to_infer=im_path, test_transform=get_transform(train=False, mean=mean, std=std))
         file_name = os.path.splitext(im_path)[0]
-        save_image(res, os.path.join(args.output_dir, im_name[:-4] + '.tif'))
+        save_image(res, os.path.join(args.output_dir, im_name[:-4] + '.gif'))
 
