@@ -3,9 +3,5 @@ CHASEDB1/*
 __pycache__/*
 *.ini
 *.pyc
-test_results/
 *.xml
 /.idea/workspace.xml
-/DRIVE
-/results
-/test_results
