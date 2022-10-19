@@ -2,8 +2,19 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9159ef1d-84eb-4719-82a1-8913a6b339c5" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/desktop.ini" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/desktop.ini" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHASEDB1/1st_label/desktop.ini" beforeDir="false" afterPath="$PROJECT_DIR$/CHASEDB1/1st_label/desktop.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHASEDB1/2nd_label/desktop.ini" beforeDir="false" afterPath="$PROJECT_DIR$/CHASEDB1/2nd_label/desktop.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHASEDB1/aug/1st_label/desktop.ini" beforeDir="false" afterPath="$PROJECT_DIR$/CHASEDB1/aug/1st_label/desktop.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHASEDB1/aug/desktop.ini" beforeDir="false" afterPath="$PROJECT_DIR$/CHASEDB1/aug/desktop.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHASEDB1/aug/images/desktop.ini" beforeDir="false" afterPath="$PROJECT_DIR$/CHASEDB1/aug/images/desktop.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHASEDB1/desktop.ini" beforeDir="false" afterPath="$PROJECT_DIR$/CHASEDB1/desktop.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHASEDB1/images/desktop.ini" beforeDir="false" afterPath="$PROJECT_DIR$/CHASEDB1/images/desktop.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CHASEDB1/mask/desktop.ini" beforeDir="false" afterPath="$PROJECT_DIR$/CHASEDB1/mask/desktop.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_Aug.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_Aug.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/datasets.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/desktop.ini" beforeDir="false" afterPath="$PROJECT_DIR$/desktop.ini" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/inferance.py" beforeDir="false" afterPath="$PROJECT_DIR$/inferance.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train_utils/train_and_eval.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_utils/train_and_eval.py" afterDir="false" />
@@ -36,6 +47,11 @@
   &quot;keyToString&quot;: {
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File&quot;: [
+      &quot;Python&quot;
+    ]
   }
 }</component>
   <component name="RunManager" selected="Python.train">
@@ -81,6 +97,27 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="scratch" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="SA_Uet-pytorch-master" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$APPLICATION_CONFIG_DIR$/scratches" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$APPLICATION_CONFIG_DIR$/scratches/scratch.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="train" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="SA_Uet-pytorch-master" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -105,6 +142,7 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.train" />
+        <item itemvalue="Python.scratch" />
         <item itemvalue="Python.inferance" />
         <item itemvalue="Python.data_Aug" />
       </list>
@@ -136,29 +174,24 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/datasets.py</url>
-          <line>75</line>
-          <option name="timeStamp" value="7" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/data_Aug.py</url>
-          <line>108</line>
+          <line>109</line>
           <option name="timeStamp" value="17" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/train.py</url>
-          <line>272</line>
+          <url>file://$PROJECT_DIR$/train_utils/train_and_eval.py</url>
+          <line>108</line>
+          <option name="timeStamp" value="21" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/train_utils/train_and_eval.py</url>
+          <line>83</line>
+          <option name="timeStamp" value="22" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/train_utils/train_and_eval.py</url>
+          <line>100</line>
           <option name="timeStamp" value="23" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/train.py</url>
-          <line>172</line>
-          <option name="timeStamp" value="31" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/datasets.py</url>
-          <line>18</line>
-          <option name="timeStamp" value="32" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
