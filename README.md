@@ -1,6 +1,11 @@
 forked from https://github.com/Tensor-king/SA_Uet-pytorch
 
-## Precision
+We work on this project for the Intoduction to Deep Learning course as part of our MSc in Tel-Aviv University.
+
+The main idea is to take small data set, generate relative big new data set from the original data and integrate it into the train process.
+We based our code on the above but extreamlly improve it.
+
+## Results
 
 | Dataset  |   SE   |   SP   |  ACC   |  AUC   | F1     |
 |----------|:------:|:------:|:------:|:------:|--------|
@@ -8,7 +13,7 @@ forked from https://github.com/Tensor-king/SA_Uet-pytorch
 | ours     | 0.729  | 0.991  | 0.986  | 0.983  | 0.936  |
 
 
-## How to train
+## Train and eval
 
-on train.py config the parameters on bottom to control the data used for first and second stages, together with lr etc. (can be done alse with command line)
+on train.py\inference.py config the parameters on bottom to control the process (can be done alse with command line)
 
