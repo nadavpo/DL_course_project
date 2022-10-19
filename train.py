@@ -14,7 +14,7 @@ import time
 import pathlib
 import matplotlib
 
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from clearml import Task, Logger
@@ -168,8 +168,8 @@ def print_WP(f1s, aucs, accs, prs, sps, ses, ind, f):
     f.write(f"\n\n")
 
 
-def print_save_metrics(f1s, aucs, accs, prs, sps, ses, res_dir):
-    with open(os.path.join(res_dir, 'best metrics.txt'), 'w') as f:
+def print_save_metrics(f1s, aucs, accs, prs, sps, ses, res_dir, postfix=""):
+    with open(os.path.join(res_dir, 'best metrics' + postfix +'.txt'), 'w') as f:
         print(f"best result F1:")
         f.write(f"best result F1:\n")
         ind = f1s.index(max(f1s))
@@ -318,7 +318,7 @@ def main(args, task=None, logger=None):
         save_articat(aucs, 'AUC_ROC - fine tune', 'AUC_ROC', res_dir)
         save_articat(lrs, 'LR - fine tune', 'LR', res_dir)
 
-        print_save_metrics(f1s, aucs, accs, prs, sps, ses, res_dir)
+        print_save_metrics(f1s, aucs, accs, prs, sps, ses, res_dir, postfix='_fine_tune')
 
     if task:
         task.upload_artifact('best model', artifact_object=os.path.join(res_dir, "best_model.pth"))
@@ -340,20 +340,24 @@ def save_articat(data, name, y_label, res_dir):
 def parse_args():
     import argparse
     parser = argparse.ArgumentParser(description="pytorch SA-UNET training")
-    parser.add_argument("--exp_name", default='50 gan samples no augs, orig train no augs, AUC_ROC')
-    parser.add_argument("--num_data_exp", default=50, type=int)
-    parser.add_argument("--data_path", default="./DRIVE/gan_data_new")
-    parser.add_argument("--fine_tune_path", default="./DRIVE/training")
+    parser.add_argument("--exp_name", default='orig train WITH augs, pre infer on gan AUC_ROC, 200 epochs')
+
+    parser.add_argument("--data_path", default="./DRIVE/training_aug")
+    # parser.add_argument("--data_path", default="./DRIVE/training")
+    parser.add_argument("--num_data_exp", default=-1, type=int)
+    parser.add_argument("--epochs", default=150, type=int, metavar="N")
+
+    parser.add_argument("--fine_tune_path", default="")
+    # parser.add_argument("--fine_tune_path", default="./DRIVE/gan_data_new_aug")
     parser.add_argument("--num_fine_tune_exp", default=-1, type=int)
+    parser.add_argument("--fine_tune_epochs", default=100, type=int, metavar="N")
+
     parser.add_argument("--test_path", default="./DRIVE/test")
     # exclude background
     parser.add_argument("--num_classes", default=1, type=int)
     parser.add_argument("--device", default="cuda", help="training device")
     parser.add_argument("-b", "--batch_size", default=2, type=int)
-    parser.add_argument("--epochs", default=100, type=int, metavar="N")
-    parser.add_argument("--fine_tune_epochs", default=50, type=int, metavar="N")
     parser.add_argument("--metric_to_optim", default="AUC_ROC")  # AUC_ROC,Accuracy,F1,Precision,Sensitivity,Specificity
-
     parser.add_argument('--lr', default=0.001, type=float, help='initial learning rate')
 
     # parser.add_argument('--resume', default=r'./results/24082022_235033_no_GAN/best_model.pth',
@@ -361,6 +365,7 @@ def parse_args():
                         help='resume from checkpoint')
     parser.add_argument('--start_epoch', default=1, type=int, metavar='N',
                         help='start epoch')
+
     parser.add_argument('--early_stop', default=35, type=int)
 
     # Mixed precision training parameters

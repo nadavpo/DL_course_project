@@ -13,8 +13,8 @@ from torchvision.utils import save_image
 def parse_args():
     parser = argparse.ArgumentParser(description='Training models with Pytorch')
     parser.add_argument('--input_dir', default='./DRIVE/test/images', type=str)
-    parser.add_argument('--output_dir', default='./test_results/DRIVE_RESULTS/temp', type=str)
-    parser.add_argument('--model_path', default='./results/08092022_132925_50 gan samples no augs, orig train no augs, AUC_ROC/best_model.pth', type=str)
+    parser.add_argument('--output_dir', default='./test_results/DRIVE_RESULTS/only_original', type=str)
+    parser.add_argument('--model_path', default='./results/12092022_083822_base model/best_model.pth', type=str)
 
     return parser.parse_args()
 

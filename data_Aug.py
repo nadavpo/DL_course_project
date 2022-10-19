@@ -4,6 +4,7 @@ import random
 
 import numpy as np
 from PIL import Image, ImageEnhance, ImageFile
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -99,7 +100,7 @@ def threadOPS(img_path, new_img_path, label_path, new_label_path):
     assert img_num == label_num, "img_num == label_num"
     num = img_num
 
-    for i in range(num):
+    for i in tqdm(range(num)):
         img_name = img_names[i]
         label_name = label_names[i]
 
@@ -118,10 +119,10 @@ def threadOPS(img_path, new_img_path, label_path, new_label_path):
 # Please modify the path
 if __name__ == '__main__':
     # DRIVE
-    threadOPS(r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\orig_10_gan\images",  # set your path of training images
-              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\orig_10_gan_aug\images",
-              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\orig_10_gan\1st_manual",  # set your path of training labels
-              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\orig_10_gan_aug\1st_manual")
+    threadOPS(r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\gan_data_new\images",  # set your path of training images
+              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\gan_data_new_aug\images",
+              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\gan_data_new\1st_manual",  # set your path of training labels
+              r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\DRIVE\gan_data_new_aug\1st_manual")
 
     # CHANSEDB1
     # os.makedirs("CHASEDB1/aug/images")

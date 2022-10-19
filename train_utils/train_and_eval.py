@@ -1,5 +1,8 @@
+import os
+
 import numpy as np
 import torch
+from PIL import Image
 from sklearn.metrics import roc_auc_score
 from torch import nn
 from tqdm import tqdm
@@ -73,13 +76,30 @@ def evaluate(model, data_loader, device, num_classes):
     mask = None
     predict = None
     with torch.no_grad():
-        for image, target in data_loader:
+        for i, (image, target) in enumerate(data_loader):
             image, target = image.to(device), target.to(device)
             # (B,1,H,W)
             output = model(image)
-            truth = output.clone()
-            output[output >= 0.5] = 1
-            output[output < 0.5] = 0
+
+            pre_infer_dir = r"G:\My Drive\final_project\code\SA_Uet-pytorch-master\test_results\DRIVE_RESULTS\only_gan"
+            if pre_infer_dir:
+                if i+1 < 10:
+                    f_name = f"0{i+1}_test.gif"
+                else:
+                    f_name = f"{i+1}_test.gif"
+                pre_infer_mask = os.path.join(pre_infer_dir,f_name)
+                pre_mask = Image.open(pre_infer_mask).convert('L')
+                pre_mask = np.array(pre_mask)
+                pre_mask[pre_mask >= 0.5] = 1
+                pre_mask[pre_mask < 0.5] = 0
+
+                output = output.cpu() + pre_mask
+                output[output>1]=1
+                output = output.cuda()
+                truth = output.clone()
+                output[output >= 0.5] = 1
+                output[output < 0.5] = 0
+
             confmat.update(target.flatten(), output.long().flatten())
             # dice.update(output, target)
             mask = target.flatten() if mask is None else torch.cat((mask, target.flatten()))
